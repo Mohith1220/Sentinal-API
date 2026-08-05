@@ -1,0 +1,187 @@
+{
+  "title": "SentinelAPI — RL Intelligence Layer",
+  "uid": "sentinel-rl-001",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "tags": ["sentinelapi", "rl", "ppo", "security"],
+  "panels": [
+    {
+      "id": 1,
+      "title": "Active Policy Version",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 0, "w": 4, "h": 4 },
+      "targets": [{
+        "expr": "max(rl_active_policy_version{job=\"rl-intelligence-service\"})",
+        "legendFormat": "Policy Version"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "steps": [
+            { "value": 0, "color": "blue" }
+          ]}
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Total RL Predictions (rate/min)",
+      "type": "graph",
+      "gridPos": { "x": 4, "y": 0, "w": 10, "h": 4 },
+      "targets": [{
+        "expr": "rate(rl_predictions_total{job=\"rl-intelligence-service\"}[1m]) * 60",
+        "legendFormat": "Predictions/min"
+      }]
+    },
+    {
+      "id": 3,
+      "title": "Mean Reward (last 100 events)",
+      "type": "gauge",
+      "gridPos": { "x": 14, "y": 0, "w": 5, "h": 4 },
+      "targets": [{
+        "expr": "rl_mean_reward_last_100{job=\"rl-intelligence-service\"}",
+        "legendFormat": "Mean Reward"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "min": -50,
+          "max": 30,
+          "thresholds": { "steps": [
+            { "value": -50, "color": "red" },
+            { "value": 0, "color": "yellow" },
+            { "value": 10, "color": "green" }
+          ]}
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Analyst Agreement Rate",
+      "type": "gauge",
+      "gridPos": { "x": 19, "y": 0, "w": 5, "h": 4 },
+      "targets": [{
+        "expr": "rl_analyst_agreement_rate{job=\"rl-intelligence-service\"}",
+        "legendFormat": "Agreement Rate"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "thresholds": { "steps": [
+            { "value": 0, "color": "red" },
+            { "value": 0.5, "color": "yellow" },
+            { "value": 0.75, "color": "green" }
+          ]}
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Reward Event Distribution",
+      "type": "piechart",
+      "gridPos": { "x": 0, "y": 4, "w": 8, "h": 8 },
+      "targets": [{
+        "expr": "sum by (event_type) (rate(rl_reward_events_total{job=\"rl-intelligence-service\"}[5m]))",
+        "legendFormat": "{{event_type}}"
+      }]
+    },
+    {
+      "id": 6,
+      "title": "Action Distribution",
+      "type": "barchart",
+      "gridPos": { "x": 8, "y": 4, "w": 8, "h": 8 },
+      "targets": [{
+        "expr": "sum by (action_name) (rate(rl_actions_total{job=\"rl-intelligence-service\"}[5m]))",
+        "legendFormat": "{{action_name}}"
+      }]
+    },
+    {
+      "id": 7,
+      "title": "Zombie Probability P95",
+      "type": "timeseries",
+      "gridPos": { "x": 16, "y": 4, "w": 8, "h": 8 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(rl_zombie_probability_bucket{job=\"rl-intelligence-service\"}[5m])) by (le))",
+          "legendFormat": "P95 Zombie Prob"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(rl_threat_probability_bucket{job=\"rl-intelligence-service\"}[5m])) by (le))",
+          "legendFormat": "P95 Threat Prob"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "title": "False Positive Rate",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 12, "w": 12, "h": 6 },
+      "targets": [{
+        "expr": "rl_false_positive_rate{job=\"rl-intelligence-service\"}",
+        "legendFormat": "FP Rate"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "thresholds": { "steps": [
+            { "value": 0, "color": "green" },
+            { "value": 0.2, "color": "yellow" },
+            { "value": 0.4, "color": "red" }
+          ]}
+        }
+      }
+    },
+    {
+      "id": 9,
+      "title": "PPO Training Events",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 12, "w": 12, "h": 6 },
+      "targets": [{
+        "expr": "increase(rl_training_runs_total{job=\"rl-intelligence-service\"}[1h])",
+        "legendFormat": "Training Runs (1h)"
+      }]
+    },
+    {
+      "id": 10,
+      "title": "RL Risk Adjustment Distribution",
+      "type": "histogram",
+      "gridPos": { "x": 0, "y": 18, "w": 12, "h": 6 },
+      "targets": [{
+        "expr": "sum(rate(rl_risk_adjustment_bucket{job=\"rl-intelligence-service\"}[5m])) by (le)",
+        "legendFormat": "RL Adjustment"
+      }]
+    },
+    {
+      "id": 11,
+      "title": "Endpoints Monitored",
+      "type": "stat",
+      "gridPos": { "x": 12, "y": 18, "w": 6, "h": 6 },
+      "targets": [{
+        "expr": "rl_endpoints_monitored{job=\"rl-intelligence-service\"}",
+        "legendFormat": "Endpoints"
+      }]
+    },
+    {
+      "id": 12,
+      "title": "Graph Feature Refresh Age (seconds)",
+      "type": "stat",
+      "gridPos": { "x": 18, "y": 18, "w": 6, "h": 6 },
+      "targets": [{
+        "expr": "time() - rl_graph_features_last_refresh_timestamp{job=\"rl-intelligence-service\"}",
+        "legendFormat": "Age (s)"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": { "steps": [
+            { "value": 0, "color": "green" },
+            { "value": 300, "color": "yellow" },
+            { "value": 600, "color": "red" }
+          ]}
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,166 @@
+[
+  {
+    "id": "users-profile-v1",
+    "label": "API_Endpoint",
+    "props": {
+      "name": "GET /v1/users/{id}/profile",
+      "host": "api.internal.com",
+      "path": "/v1/users/profile",
+      "auth_scheme": "None",
+      "data_sensitivity": "PII",
+      "lifecycle_status": "Active",
+      "risk_score": 85,
+      "request_count_24h": 1250
+    }
+  },
+  {
+    "id": "admin-bulk-delete",
+    "label": "API_Endpoint",
+    "props": {
+      "name": "POST /v1/admin/users/bulk-delete",
+      "host": "api.internal.com",
+      "path": "/v1/admin/users/bulk-delete",
+      "auth_scheme": "BasicAuth",
+      "data_sensitivity": "PII",
+      "lifecycle_status": "Active",
+      "risk_score": 92,
+      "request_count_24h": 45
+    }
+  },
+  {
+    "id": "payments-transactions",
+    "label": "API_Endpoint",
+    "props": {
+      "name": "GET /v2/payments/transactions",
+      "host": "api.internal.com",
+      "path": "/v2/payments/transactions",
+      "auth_scheme": "OAuth2",
+      "data_sensitivity": "Financial",
+      "lifecycle_status": "Active",
+      "risk_score": 78,
+      "request_count_24h": 3200
+    }
+  },
+  {
+    "id": "products-v1",
+    "label": "API_Endpoint",
+    "props": {
+      "name": "GET /v1/products",
+      "host": "api.internal.com",
+      "path": "/v1/products",
+      "auth_scheme": "OAuth2",
+      "data_sensitivity": "Public",
+      "lifecycle_status": "Active",
+      "risk_score": 35,
+      "request_count_24h": 15000
+    }
+  },
+  {
+    "id": "orders-v1",
+    "label": "API_Endpoint",
+    "props": {
+      "name": "POST /v1/orders",
+      "host": "api.internal.com",
+      "path": "/v1/orders",
+      "auth_scheme": "OAuth2",
+      "data_sensitivity": "Internal",
+      "lifecycle_status": "Active",
+      "risk_score": 42,
+      "request_count_24h": 8500
+    }
+  },
+  {
+    "id": "inventory-stock",
+    "label": "API_Endpoint",
+    "props": {
+      "name": "GET /v1/inventory/stock",
+      "host": "api.internal.com",
+      "path": "/v1/inventory/stock",
+      "auth_scheme": "OAuth2",
+      "data_sensitivity": "Internal",
+      "lifecycle_status": "Active",
+      "risk_score": 28,
+      "request_count_24h": 5600
+    }
+  },
+  {
+    "id": "health-check",
+    "label": "API_Endpoint",
+    "props": {
+      "name": "GET /health",
+      "host": "api.internal.com",
+      "path": "/health",
+      "auth_scheme": "None",
+      "data_sensitivity": "Public",
+      "lifecycle_status": "Active",
+      "risk_score": 5,
+      "request_count_24h": 50000
+    }
+  },
+  {
+    "id": "user-service",
+    "label": "Service",
+    "props": {
+      "name": "User Service",
+      "host": "user-service.internal.com",
+      "description": "Manages user profiles and account data"
+    }
+  },
+  {
+    "id": "payment-service",
+    "label": "Service",
+    "props": {
+      "name": "Payment Service",
+      "host": "payment-service.internal.com",
+      "description": "Processes payments and transactions"
+    }
+  },
+  {
+    "id": "order-service",
+    "label": "Service",
+    "props": {
+      "name": "Order Service",
+      "host": "order-service.internal.com",
+      "description": "Manages orders and fulfillment"
+    }
+  },
+  {
+    "id": "inventory-service",
+    "label": "Service",
+    "props": {
+      "name": "Inventory Service",
+      "host": "inventory-service.internal.com",
+      "description": "Tracks inventory and stock levels"
+    }
+  },
+  {
+    "id": "user-database",
+    "label": "DataAsset",
+    "props": {
+      "name": "User Database",
+      "type": "PostgreSQL",
+      "sensitivity": "PII",
+      "description": "Contains user profiles, emails, and personal information"
+    }
+  },
+  {
+    "id": "payment-database",
+    "label": "DataAsset",
+    "props": {
+      "name": "Payment Database",
+      "type": "PostgreSQL",
+      "sensitivity": "Financial",
+      "description": "Contains payment records and transaction history"
+    }
+  },
+  {
+    "id": "inventory-database",
+    "label": "DataAsset",
+    "props": {
+      "name": "Inventory Database",
+      "type": "PostgreSQL",
+      "sensitivity": "Internal",
+      "description": "Contains product inventory and stock information"
+    }
+  }
+]

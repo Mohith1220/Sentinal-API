@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "remediation-service"
+version = "0.1.0"
+description = "SentinelAPI Remediation Service — generates prioritized remediation recommendations"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi==0.111.0",
+    "uvicorn[standard]==0.29.0",
+    "pydantic==2.7.1",
+    "sqlalchemy==2.0.30",
+    "asyncpg==0.29.0",
+    "aiokafka==0.10.0",
+    "structlog==24.1.0",
+    "apscheduler==3.10.4",
+    "prometheus-fastapi-instrumentator==7.0.0",
+    "httpx==0.27.0",
+    "sentinel-shared @ file:///${PROJECT_ROOT}/sentinel_shared",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==8.2.0",
+    "pytest-asyncio==0.23.6",
+    "hypothesis==6.100.1",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["remediation_service*"]

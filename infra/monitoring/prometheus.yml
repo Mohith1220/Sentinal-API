@@ -1,0 +1,75 @@
+---
+# Prometheus scrape configuration for SentinelAPI
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: sentinelapi
+    environment: production
+
+# Alerting configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+
+scrape_configs:
+
+  # ── Prometheus self-monitoring ──────────────────────────────────────
+  - job_name: prometheus
+    static_configs:
+      - targets: [localhost:9090]
+
+  # ── SentinelAPI Microservices ───────────────────────────────────────
+  - job_name: api-gateway
+    metrics_path: /metrics
+    static_configs:
+      - targets: [api-gateway:8000]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: api-gateway
+
+  - job_name: discovery-service
+    metrics_path: /metrics
+    static_configs:
+      - targets: [discovery-service:8001]
+
+  - job_name: stream-processor
+    metrics_path: /metrics
+    static_configs:
+      - targets: [stream-processor:8002]
+
+  - job_name: classification-service
+    metrics_path: /metrics
+    static_configs:
+      - targets: [classification-service:8003]
+
+  - job_name: risk-scorer-service
+    metrics_path: /metrics
+    static_configs:
+      - targets: [risk-scorer-service:8004]
+
+  - job_name: anomaly-detector-service
+    metrics_path: /metrics
+    static_configs:
+      - targets: [anomaly-detector-service:8005]
+
+  - job_name: remediation-service
+    metrics_path: /metrics
+    static_configs:
+      - targets: [remediation-service:8006]
+
+  - job_name: graph-service
+    metrics_path: /metrics
+    static_configs:
+      - targets: [graph-service:8007]
+
+  - job_name: rl-intelligence-service
+    metrics_path: /metrics
+    static_configs:
+      - targets: [rl-intelligence-service:8008]
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: rl_.*
+        action: keep

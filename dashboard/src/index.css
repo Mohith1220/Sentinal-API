@@ -1,0 +1,147 @@
+@import "tailwindcss";
+
+@theme {
+  --color-cyber-bg: #050a0f;
+  --color-cyber-base: #071018;
+  --color-cyber-panel: #0b1220;
+  --color-cyber-card: #111827;
+  --color-cyber-border: rgba(255, 255, 255, 0.07);
+  --color-cyber-border-hover: rgba(6, 182, 212, 0.25);
+  
+  --color-cyber-red: #ef4444;       /* Critical Threats */
+  --color-cyber-amber: #f97316;     /* High Threats / Warnings */
+  --color-cyber-yellow: #f59e0b;    /* Medium Warnings */
+  --color-cyber-green: #10b981;     /* Safe / Active APIs */
+  --color-cyber-blue: #0ea5e9;      /* Analytics / Traffic data */
+  --color-cyber-purple: #8b5cf6;    /* AI Threat Intelligence */
+  --color-cyber-cyan: #06b6d4;      /* Interactive links / Active hover states */
+  
+  --font-sans: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  
+  --animate-threat-pulse: pulse-threat 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-cyber-glow: glow-cyan 3.5s ease-in-out infinite;
+
+  @keyframes pulse-threat {
+    0%, 100% {
+      opacity: 1;
+      filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.6));
+    }
+    50% {
+      opacity: 0.6;
+      filter: drop-shadow(0 0 2px rgba(239, 68, 68, 0.2));
+    }
+  }
+  @keyframes glow-cyan {
+    0%, 100% {
+      border-color: rgba(6, 182, 212, 0.15);
+      box-shadow: 0 0 15px rgba(6, 182, 212, 0.05);
+    }
+    50% {
+      border-color: rgba(6, 182, 212, 0.35);
+      box-shadow: 0 0 25px rgba(6, 182, 212, 0.15);
+    }
+  }
+}
+
+/* Custom Base Configurations */
+@layer base {
+  body {
+    background-color: var(--color-cyber-bg);
+    color: #f3f4f6;
+    font-family: var(--font-sans);
+    overflow-x: hidden;
+  }
+  
+  /* Cyberpunk Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #050a0f;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #1e293b;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #0ea5e9;
+  }
+}
+
+/* Glassmorphism Panel styles */
+.glass-panel {
+  background: rgba(11, 18, 32, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+}
+
+.glass-panel-accent {
+  background: rgba(11, 18, 32, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(6, 182, 212, 0.2);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  border-radius: 12px;
+}
+
+/* Cybersecurity Glowing Pulse Alert */
+.threat-pulse-red {
+  animation: pulse-threat 1.5s infinite;
+}
+
+/* Hide default react-router scroll styling */
+#root {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  border: none !important;
+  padding: 0 !important;
+  text-align: left !important;
+  min-height: 100vh !important;
+  display: block !important;
+  background-color: #050a0f;
+}
+
+/* Scanline visual overlay effect */
+.scanlines {
+  position: relative;
+  overflow: hidden;
+}
+.scanlines::before {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+  z-index: 2;
+  background-size: 100% 4px, 6px 100%;
+  pointer-events: none;
+}
+
+/* D3 Dependency Graph Specific styles */
+.node-active {
+  stroke: #06b6d4 !important;
+  stroke-width: 3px !important;
+  filter: drop-shadow(0 0 8px rgba(6, 182, 212, 0.8));
+}
+
+.node-zombie {
+  animation: pulse-threat 1.5s infinite;
+}
+
+.link-highlighted {
+  stroke: #ef4444 !important;
+  stroke-width: 3px !important;
+  stroke-dasharray: 5, 5;
+  animation: dash 1s linear infinite;
+}
+
+@keyframes dash {
+  to {
+    stroke-dashoffset: -10;
+  }
+}

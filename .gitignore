@@ -1,0 +1,57 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+*.egg
+.eggs/
+dist/
+build/
+*.so
+*.dylib
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Testing / coverage
+.pytest_cache/
+.hypothesis/
+.coverage
+htmlcov/
+coverage.xml
+*.cover
+
+# Node / Frontend
+node_modules/
+dashboard/dist/
+dashboard/.env
+
+# Docker build artifacts
+*.dockerignore
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Kiro specs (internal AI tooling)
+.kiro/
+
+# Docs (keep only README.md)
+AI_ENGINE_DEEP_DIVE.md
+AI_MODELS.md
+REPOSITORY_MASTER_DOCUMENTATION.md
+docs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets / env
+*.env
+!dashboard/.env.example

@@ -1,0 +1,351 @@
+version: "3.9"
+
+# SentinelAPI — Docker Compose configuration
+# Starts all infrastructure services and all eight microservices.
+# Usage: docker compose up --wait
+
+x-service-defaults: &service-defaults
+  restart: unless-stopped
+  networks:
+    - sentinel-net
+
+x-healthcheck-defaults: &healthcheck-defaults
+  interval: 10s
+  timeout: 5s
+  retries: 5
+  start_period: 30s
+
+services:
+
+  # ---------------------------------------------------------------------------
+  # Infrastructure
+  # ---------------------------------------------------------------------------
+
+  postgres:
+    <<: *service-defaults
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: sentinel
+      POSTGRES_PASSWORD: sentinel_secret
+      POSTGRES_DB: sentinelapi
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./infra/db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD-SHELL", "pg_isready -U sentinel -d sentinelapi"]
+
+  neo4j:
+    <<: *service-defaults
+    image: neo4j:5-community
+    environment:
+      NEO4J_AUTH: neo4j/sentinel_secret
+      NEO4J_PLUGINS: '["apoc"]'
+      NEO4J_dbms_security_procedures_unrestricted: apoc.*
+    volumes:
+      - neo4j-data:/data
+      - ./infra/neo4j/init.cypher:/var/lib/neo4j/import/init.cypher
+    ports:
+      - "7474:7474"   # HTTP browser
+      - "7687:7687"   # Bolt
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD-SHELL", "wget -qO- http://localhost:7474 || exit 1"]
+
+  kafka:
+    <<: *service-defaults
+    image: apache/kafka:3.7.0
+    environment:
+      # KRaft mode — no ZooKeeper required
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      CLUSTER_ID: "sentinel-kafka-cluster-01"
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    ports:
+      - "9092:9092"
+    healthcheck:
+      <<: *healthcheck-defaults
+      test:
+        [
+          "CMD-SHELL",
+          "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 > /dev/null 2>&1"
+        ]
+
+  # ---------------------------------------------------------------------------
+  # Microservices
+  # ---------------------------------------------------------------------------
+
+  api-gateway:
+    <<: *service-defaults
+    build:
+      context: .
+      dockerfile: services/api-gateway/Dockerfile
+    image: sentinelapi/api-gateway:latest
+    environment:
+      DATABASE_URL: postgresql+asyncpg://sentinel:sentinel_secret@postgres:5432/sentinelapi
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      LOG_LEVEL: INFO
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD-SHELL", "curl -sf http://localhost:8000/health || exit 1"]
+
+  discovery-service:
+    <<: *service-defaults
+    build:
+      context: .
+      dockerfile: services/discovery-service/Dockerfile
+    image: sentinelapi/discovery-service:latest
+    environment:
+      DATABASE_URL: postgresql+asyncpg://sentinel:sentinel_secret@postgres:5432/sentinelapi
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      LOG_LEVEL: INFO
+    ports:
+      - "8001:8001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD-SHELL", "curl -sf http://localhost:8001/health || exit 1"]
+
+  stream-processor:
+    <<: *service-defaults
+    build:
+      context: .
+      dockerfile: services/stream-processor/Dockerfile
+    image: sentinelapi/stream-processor:latest
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      DISCOVERY_SERVICE_URL: http://discovery-service:8001
+      LOG_LEVEL: INFO
+    ports:
+      - "8002:8002"
+    depends_on:
+      kafka:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD-SHELL", "curl -sf http://localhost:8002/health || exit 1"]
+
+  classification-service:
+    <<: *service-defaults
+    build:
+      context: .
+      dockerfile: services/classification-service/Dockerfile
+    image: sentinelapi/classification-service:latest
+    environment:
+      DATABASE_URL: postgresql+asyncpg://sentinel:sentinel_secret@postgres:5432/sentinelapi
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      LOG_LEVEL: INFO
+    ports:
+      - "8003:8003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD-SHELL", "curl -sf http://localhost:8003/health || exit 1"]
+
+  risk-scorer-service:
+    <<: *service-defaults
+    build:
+      context: .
+      dockerfile: services/risk-scorer-service/Dockerfile
+    image: sentinelapi/risk-scorer-service:latest
+    environment:
+      DATABASE_URL: postgresql+asyncpg://sentinel:sentinel_secret@postgres:5432/sentinelapi
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      LOG_LEVEL: INFO
+    ports:
+      - "8004:8004"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD-SHELL", "curl -sf http://localhost:8004/health || exit 1"]
+
+  anomaly-detector-service:
+    <<: *service-defaults
+    build:
+      context: .
+      dockerfile: services/anomaly-detector-service/Dockerfile
+    image: sentinelapi/anomaly-detector-service:latest
+    environment:
+      DATABASE_URL: postgresql+asyncpg://sentinel:sentinel_secret@postgres:5432/sentinelapi
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      LOG_LEVEL: INFO
+    ports:
+      - "8005:8005"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD-SHELL", "curl -sf http://localhost:8005/health || exit 1"]
+
+  remediation-service:
+    <<: *service-defaults
+    build:
+      context: .
+      dockerfile: services/remediation-service/Dockerfile
+    image: sentinelapi/remediation-service:latest
+    environment:
+      DATABASE_URL: postgresql+asyncpg://sentinel:sentinel_secret@postgres:5432/sentinelapi
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      LOG_LEVEL: INFO
+    ports:
+      - "8006:8006"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD-SHELL", "curl -sf http://localhost:8006/health || exit 1"]
+
+  graph-service:
+    <<: *service-defaults
+    build:
+      context: .
+      dockerfile: services/graph-service/Dockerfile
+    image: sentinelapi/graph-service:latest
+    environment:
+      DATABASE_URL: postgresql+asyncpg://sentinel:sentinel_secret@postgres:5432/sentinelapi
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USER: neo4j
+      NEO4J_PASSWORD: sentinel_secret
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      LOG_LEVEL: INFO
+    ports:
+      - "8007:8007"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD-SHELL", "curl -sf http://localhost:8007/health || exit 1"]
+
+  rl-intelligence-service:
+    <<: *service-defaults
+    build:
+      context: .
+      dockerfile: services/rl-intelligence-service/Dockerfile
+    image: sentinelapi/rl-intelligence-service:latest
+    environment:
+      DATABASE_URL: postgresql+asyncpg://sentinel:sentinel_secret@postgres:5432/sentinelapi
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USER: neo4j
+      NEO4J_PASSWORD: sentinel_secret
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      RL_SERVICE_PORT: "8008"
+      RL_POLICY_DIR: /models/rl_policies
+      XGBOOST_MODEL_PATH: /models/xgb_risk.pkl
+      LOG_LEVEL: INFO
+    ports:
+      - "8008:8008"
+    volumes:
+      - rl-models:/models
+    depends_on:
+      postgres:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD-SHELL", "curl -sf http://localhost:8008/health || exit 1"]
+      start_period: 60s
+
+  # ---------------------------------------------------------------------------
+  # Monitoring
+  # ---------------------------------------------------------------------------
+
+  prometheus:
+    <<: *service-defaults
+    image: prom/prometheus:v2.52.0
+    volumes:
+      - ./infra/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=7d"
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD-SHELL", "wget -qO- http://localhost:9090/-/healthy || exit 1"]
+
+  grafana:
+    <<: *service-defaults
+    image: grafana/grafana:10.4.2
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: sentinel_secret
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./infra/monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./infra/monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+    ports:
+      - "3001:3000"
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health || exit 1"]
+
+# ---------------------------------------------------------------------------
+# Volumes
+# ---------------------------------------------------------------------------
+volumes:
+  postgres-data:
+  neo4j-data:
+  kafka-data:
+  rl-models:
+  prometheus-data:
+  grafana-data:
+
+# ---------------------------------------------------------------------------
+# Networks
+# ---------------------------------------------------------------------------
+networks:
+  sentinel-net:
+    driver: bridge

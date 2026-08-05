@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "discovery-service"
+version = "0.1.0"
+description = "SentinelAPI Discovery Service — parses static specs, gateway configs, and log files"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi==0.111.0",
+    "uvicorn[standard]==0.29.0",
+    "pydantic==2.7.1",
+    "sqlalchemy==2.0.30",
+    "asyncpg==0.29.0",
+    "aiokafka==0.10.0",
+    "structlog==24.1.0",
+    "apscheduler==3.10.4",
+    "prometheus-fastapi-instrumentator==7.0.0",
+    "httpx==0.27.0",
+    "prance==23.6.21.0",
+    "openapi-spec-validator==0.7.1",
+    "pyyaml==6.0.1",
+    "sentinel-shared @ file:///${PROJECT_ROOT}/sentinel_shared",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==8.2.0",
+    "pytest-asyncio==0.23.6",
+    "hypothesis==6.100.1",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["discovery_service*"]
