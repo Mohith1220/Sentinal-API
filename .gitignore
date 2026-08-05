@@ -34,7 +34,6 @@ dashboard/.env
 *.dockerignore
 
 # IDE / Editor
-.vscode/
 .idea/
 *.swp
 *.swo
@@ -55,3 +54,4 @@ Thumbs.db
 # Secrets / env
 *.env
 !dashboard/.env.example
+config.bat
